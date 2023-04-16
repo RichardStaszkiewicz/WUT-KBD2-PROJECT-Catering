@@ -589,7 +589,7 @@ BEGIN
     FETCH c_zamowienia INTO row_zamowienia;
     EXIT WHEN c_zamowienia%NOTFOUND;
 
-    -- ustawianie statusu na 'odwo³any automatycznie'
+    -- ustawianie statusu na 'odwoany automatycznie'
     row_zamowienia.status := 3;
     END LOOP;
 
@@ -646,5 +646,36 @@ BEGIN
     WHERE dk.id_dania = row_dania.id_dania;
     END LOOP;
     CLOSE c_dania;
+END;
+/
+
+create or replace TRIGGER TR_Zmiania_faktury
+    AFTER INSERT OR UPDATE OR DELETE ON faktury_pozycje
+    FOR EACH ROW
+-- wyzwalacz aktualizujacy faktury po zmianie w pozycjach
+DECLARE
+    old_netto faktury.netto%TYPE;
+    old_vat faktury.vat%TYPE;
+    old_brutto faktury.brutto%TYPE;
+    new_netto faktury.netto%TYPE;
+    new_vat faktury.vat%TYPE;
+    new_brutto faktury.brutto%TYPE;
+BEGIN
+    -- przypisanie wartosci do zmiennych
+    old_netto := NVL(:old.netto, 0);
+    old_vat := NVL(:old.vat, 0);
+    old_brutto := NVL(:old.brutto, 0);
+    new_netto := NVL(:new.netto, 0);
+    new_vat := NVL(:new.vat, 0);
+    new_brutto := NVL(:new.brutto, 0);
+
+    UPDATE faktury f
+    SET
+    -- aktualizowanie o roznice wartosci netto, vat i brutto zmienionej pozycji
+        f.netto = f.netto - old_netto + new_netto,
+        f.vat = f.vat - old_vat + new_vat,
+        f.brutto = f.brutto - old_brutto + new_brutto
+    WHERE f.id_faktury = :old.id_faktury
+    OR f.id_faktury = :new.id_faktury;
 END;
 /
