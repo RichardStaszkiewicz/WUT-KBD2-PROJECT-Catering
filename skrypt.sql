@@ -73,7 +73,7 @@ CREATE TABLE KONTRAHENCI
 , IMIE VARCHAR2(20 BYTE) 
 , NAZWISKO VARCHAR2(40 BYTE) 
 , NAZWA VARCHAR2(50 BYTE) 
-, NIP CHAR(13 BYTE) 
+, NIP CHAR(10 BYTE) 
 , MAIL VARCHAR2(40 BYTE) NOT NULL 
 , ADRES VARCHAR2(150 BYTE) NOT NULL 
 , TELEFON VARCHAR2(15 BYTE) NOT NULL 
@@ -147,6 +147,17 @@ CREATE TABLE ZAMOWIENIA
     ID_ZAMOWIENIA 
   )
   ENABLE 
+)
+PARTITION BY RANGE (DATA) 
+(
+  PARTITION P1_91_00 VALUES LESS THAN (TO_DATE(' 2001-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+  TABLESPACE KBD2_1 
+, PARTITION P2_01_10 VALUES LESS THAN (TO_DATE(' 2011-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+  TABLESPACE KBD2_2 
+, PARTITION P3_11_20 VALUES LESS THAN (TO_DATE(' 2021-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+  TABLESPACE KBD2_3   
+, PARTITION P4_21_30 VALUES LESS THAN (TO_DATE(' 2031-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+  TABLESPACE KBD2_4  
 );
 
 CREATE TABLE DANIA_SKLADNIKI 
@@ -219,7 +230,8 @@ SUM(CASE WHEN f.CZY_WYCHODZACA = '0' THEN f.NETTO ELSE 0 END) SUMA_NETTO_PRZYCHO
 SUM(CASE WHEN f.CZY_WYCHODZACA = '1' THEN f.NETTO ELSE 0 END) SUMA_NETTO_ROZCHODOW,
 SUM(CASE WHEN f.CZY_WYCHODZACA = '0' THEN f.NETTO ELSE 0 END) - SUM(CASE WHEN f.CZY_WYCHODZACA = '1' THEN f.NETTO ELSE 0 END) BILANS
 FROM FAKTURY f
-GROUP BY extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA);
+GROUP BY extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA)
+ORDER BY ROK DESC, MIESIAC DESC;
 
 CREATE VIEW DANIA_ZAMOWIENIA_ZESTAWIENIE
 AS SELECT
@@ -230,9 +242,10 @@ AS SELECT
   FROM DANIA d
   JOIN ZAMOWIENIA_POZYCJE zp ON (zp.ID_DANIA = d.ID_DANIA)
   JOIN ZAMOWIENIA z ON (z.ID_ZAMOWIENIA = zp.ID_ZAMOWIENIA)
-  group by extract(YEAR FROM z.DATA), extract(MONTH FROM z.DATA), d.NAZWA;
+  group by extract(YEAR FROM z.DATA), extract(MONTH FROM z.DATA), d.NAZWA
+  ORDER BY ROK DESC, MIESIAC DESC;
 
-CREATE VIEW KONTRAHENCI_ZAMOWIENIA_MIESIAC
+CREATE VIEW K_ZAMOWIENIA_MIESIAC
 AS SELECT k.ID_KONTRAHENTA ID,
   CASE WHEN k.CZY_FIRMA = '1' THEN k.NAZWA ELSE CONCAT (k.IMIE, CONCAT(' ', k.NAZWISKO)) END NAZWA, 
   COUNT(z.ID_ZAMOWIENIA) LICZBA_ZAMOWIEN,
@@ -240,10 +253,10 @@ AS SELECT k.ID_KONTRAHENTA ID,
   FROM KONTRAHENCI k
   JOIN ZAMOWIENIA z ON (z.ID_KLIENTA = k.ID_KONTRAHENTA)
   JOIN FAKTURY f ON (f.ID_NABYWCY = k.ID_KONTRAHENTA)
-  WHERE f.DATA_WYSTAWIENIA > sysdate-30 and z.DATA > sysdate-30
+  WHERE f.DATA_WYSTAWIENIA > sysdate-30 and z.DATA > sysdate-30 AND f.CZY_WYCHODZACA = '0'
   group by k.ID_KONTRAHENTA, CASE WHEN k.CZY_FIRMA = '1' THEN k.NAZWA ELSE CONCAT (k.IMIE, CONCAT(' ', k.NAZWISKO)) END;
 
-CREATE VIEW KONTRAHENCI_ZAMOWIENIA_ZESTAWIENIE
+CREATE VIEW K_ZAMOWIENIA_ZESTAWIENIE
 AS SELECT
   extract(YEAR FROM f.DATA_WYSTAWIENIA) ROK,
   extract(MONTH FROM f.DATA_WYSTAWIENIA) MIESIAC,
@@ -254,7 +267,9 @@ AS SELECT
   FROM KONTRAHENCI k
   JOIN ZAMOWIENIA z ON (z.ID_KLIENTA = k.ID_KONTRAHENTA)
   JOIN FAKTURY f ON (f.ID_NABYWCY = k.ID_KONTRAHENTA)
-  GROUP BY extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA), k.ID_KONTRAHENTA, CASE WHEN k.CZY_FIRMA = '1' THEN k.NAZWA ELSE CONCAT (k.IMIE, CONCAT(' ', k.NAZWISKO)) END;
+  WHERE f.CZY_WYCHODZACA = '0'
+  GROUP BY extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA), k.ID_KONTRAHENTA, CASE WHEN k.CZY_FIRMA = '1' THEN k.NAZWA ELSE CONCAT (k.IMIE, CONCAT(' ', k.NAZWISKO)) END
+    ORDER BY ROK DESC, MIESIAC DESC;
 
 CREATE VIEW PRZYCHODY_ZESTAWIENIE
 AS SELECT
@@ -265,7 +280,8 @@ AS SELECT
   SUM(f.NETTO) SUMA_NETTO
   FROM FAKTURY f
   WHERE f.CZY_WYCHODZACA = '0'
-  group by extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA), f.SPOSOB_ZAPLATY;
+  group by extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA), f.SPOSOB_ZAPLATY
+    ORDER BY ROK DESC, MIESIAC DESC;
 
 CREATE VIEW ROZCHODY_ZESTAWIENIE_PODATKI
 AS SELECT
@@ -276,7 +292,8 @@ AS SELECT
   SUM(f.VAT) SUMA_PODATKU
   FROM FAKTURY f
   WHERE f.CZY_WYCHODZACA = '1'
-  group by extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA), f.STAWKA_VAT;
+  group by extract(YEAR FROM f.DATA_WYSTAWIENIA), extract(MONTH FROM f.DATA_WYSTAWIENIA), f.STAWKA_VAT
+  ORDER BY ROK DESC, MIESIAC DESC;
 
 CREATE VIEW ROZCHODY_ZESTAWIENIE_TOWARY
 AS SELECT
@@ -290,29 +307,30 @@ AS SELECT
   JOIN DOSTAWY_POZYCJE dp ON (dp.ID_TOWARU = t.ID_TOWARU)
   JOIN DOSTAWY d ON (d.ID_DOSTAWY = dp.ID_DOSTAWY)
   JOIN SL_JEDNOSTKI j ON (j.ID_JEDNOSTKI = t.ID_JEDNOSTKI)
-  group by extract(YEAR FROM d.DATA), extract(MONTH FROM d.DATA), t.NAZWA, j.NAZWA, dp.CENA_JEDNOSTKOWA;
+  group by extract(YEAR FROM d.DATA), extract(MONTH FROM d.DATA), t.NAZWA, j.NAZWA, dp.CENA_JEDNOSTKOWA
+  ORDER BY ROK DESC, MIESIAC DESC;
 
-CREATE UNIQUE INDEX DANIA_SKLADNIKI_T_INDEX ON DANIA_SKLADNIKI (ID_TOWARU ASC);
+CREATE INDEX DANIA_SKLADNIKI_T_INDEX ON DANIA_SKLADNIKI (ID_TOWARU ASC);
 
-CREATE UNIQUE INDEX DOSTAWY_DOSTAWCY_INDEX ON DOSTAWY (ID_DOSTAWCY ASC);
+CREATE INDEX DOSTAWY_DOSTAWCY_INDEX ON DOSTAWY (ID_DOSTAWCY ASC);
 
 CREATE INDEX DOSTAWY_POZYCJE_T_INDEX ON DOSTAWY_POZYCJE (ID_TOWARU ASC);
 
-CREATE UNIQUE INDEX FAKTURY_NABYWCY_INDEX ON FAKTURY (ID_NABYWCY ASC);
+CREATE INDEX FAKTURY_NABYWCY_INDEX ON FAKTURY (ID_NABYWCY ASC);
 
 CREATE INDEX FAKTURY_SPRZEDAWCY_INDEX ON FAKTURY (ID_SPRZEDAWCY ASC);
 
 CREATE INDEX KONTRAHENCI_BANK_INDEX ON KONTRAHENCI (ID_BANKU ASC);
 
-CREATE UNIQUE INDEX TOWARY_JEDNOSTKI_INDEX ON TOWARY (ID_JEDNOSTKI ASC);
+CREATE INDEX TOWARY_JEDNOSTKI_INDEX ON TOWARY (ID_JEDNOSTKI ASC);
 
-CREATE UNIQUE INDEX TOWARY_KATEGORIE_INDEX ON TOWARY (ID_KATEGORII ASC);
+CREATE INDEX TOWARY_KATEGORIE_INDEX ON TOWARY (ID_KATEGORII ASC);
 
 CREATE INDEX ZAMOWIENIA_KLIENCI_INDEX ON ZAMOWIENIA (ID_KLIENTA ASC);
 
 CREATE INDEX ZAMOWIENIA_STATUSY_INDEX ON ZAMOWIENIA (STATUS ASC);
 
-CREATE UNIQUE INDEX ZAMOWIENIA_POZYCJE_D_INDEX ON ZAMOWIENIA_POZYCJE (ID_DANIA ASC);
+CREATE INDEX ZAMOWIENIA_POZYCJE_D_INDEX ON ZAMOWIENIA_POZYCJE (ID_DANIA ASC);
 
 ALTER TABLE KONTRAHENCI
 ADD CONSTRAINT KONTRAHENCI_NIP_UK UNIQUE 
@@ -512,6 +530,121 @@ ADD CONSTRAINT KONTRAHENCI_CZY_FIRMA_CHK CHECK
 (CZY_FIRMA IN ('0', '1'))
 ENABLE;
 
+COMMENT ON TABLE DANIA IS 'Zawiera dania z menu wraz z obecna dostepnoscia i cena.';
+
+COMMENT ON TABLE DANIA_SKLADNIKI IS 'Zawiera przyporzadkowania uzywanych skladnikow do dan.';
+
+COMMENT ON TABLE DOSTAWY IS 'Zawiera odebrane dostawy.';
+
+COMMENT ON TABLE DOSTAWY_POZYCJE IS 'Zawiera dostarczone towary z ich iloscia, cena i data waznosci.';
+
+COMMENT ON TABLE FAKTURY IS 'Zawiera szczegolowe dane faktur, zarowno wystawione firmie jak i przez firme. Jedno z ID_NABYWCY, ID_SPRZEDAWCY powinno wskazywac na firme korzystajaca z systemu, czyli powinno byc rowne 1.';
+
+COMMENT ON TABLE FAKTURY_POZYCJE IS 'Zawiera pojedyncze pozycje na fakturze. Sumy wartosci netto vat i brutto pozycji sa zapisywane na fakturze.';
+
+COMMENT ON TABLE KONTRAHENCI IS 'Zawiera dane kontrahentow, ktorzy moga byc osoba fizyczna i firma (koniecznie pierwszy rekord musi reprezentowac firme korzystajaca z systemu, ID_KONTRAHENTA musi byc rowne 1).';
+
+COMMENT ON TABLE SL_BANKI IS 'Zawiera informacje o bankach uzywanych przez kontrahentow.';
+
 COMMENT ON TABLE SL_JEDNOSTKI IS 'Tabela slownikowa z dostepnymi jednostkami, w ktorych wyrazone moga byc produkty.';
 
-COMMENT ON TABLE SL_KATEGORIE_PODATKOWE IS 'Tabela slownikowa z kategoriami produktow spozywczych';
+COMMENT ON TABLE SL_KATEGORIE_PODATKOWE IS 'Tabela slownikowa z kategoriami produktow spozywczych.';
+
+COMMENT ON TABLE SL_STATUSY_ZAMOWIEN IS 'Zawiera wszystkie statusy, w ktorych moga byc zamowienia.';
+
+COMMENT ON TABLE TOWARY IS 'Zawiera skladowane przez firme towary wraz z ich aktualnym stanem na magazynie.';
+
+COMMENT ON TABLE ZAMOWIENIA IS 'Zawiera zamowienia zlozone przez klientow.';
+
+COMMENT ON TABLE ZAMOWIENIA_POZYCJE IS 'Zawiera zamowione przez klientow dania, wraz z iloscia w sztukach.';
+
+COMMENT ON COLUMN DANIA.DOSTEPNOSC IS 'Ile sztuk danego dania mozna obecnie wytworzyc z towarow na magazynie.';
+
+COMMENT ON COLUMN FAKTURY.NETTO IS 'Suma netto pozycji faktury.';
+
+COMMENT ON COLUMN FAKTURY.VAT IS 'Suma VAT pozycji faktury.';
+
+COMMENT ON COLUMN FAKTURY.BRUTTO IS 'Suma brutto pozycji faktury.';
+
+COMMENT ON COLUMN FAKTURY.CZY_WYCHODZACA IS 'Ma wartosc ''1'' jesli firma musi za nia zaplacic lub ''0'' jesli ktos za nia zaplaci firmie''.';
+
+CREATE TRIGGER TR_USUNIETE_DANIA 
+    AFTER DELETE ON dania
+    FOR EACH ROW
+-- wyzwalacz usuwajacy zamowienia usunietych dan
+DECLARE
+    -- kursor iterujacy po zamowieniach
+    CURSOR c_zamowienia IS
+    SELECT z.status
+    FROM zamowienia z INNER JOIN zamowienia_pozycje zp
+    ON z.id_zamowienia = zp.id_zamowienia
+    WHERE zp.id_dania = :old.id_dania;
+
+    row_zamowienia c_zamowienia%ROWTYPE;
+BEGIN
+    OPEN c_zamowienia;
+
+    LOOP
+    -- petla przechodzaca po kolejnych zamowieniach
+    FETCH c_zamowienia INTO row_zamowienia;
+    EXIT WHEN c_zamowienia%NOTFOUND;
+
+    -- ustawianie statusu na 'odwo³any automatycznie'
+    row_zamowienia.status := 3;
+    END LOOP;
+
+    CLOSE c_zamowienia;
+END;
+/
+
+CREATE TRIGGER TR_ZMIENIONE_TOWARY 
+    AFTER INSERT OR UPDATE OR DELETE ON towary
+-- wyzwalacz aktualizujacy dostepnosc dan po zmianie ilosci towarow
+DECLARE
+    -- kursor iterujacy po daniach dotknietych zmiana
+    CURSOR c_dania IS
+    SELECT d.id_dania, d.dostepnosc
+    FROM dania d;
+
+    row_dania c_dania%ROWTYPE;
+BEGIN
+    OPEN c_dania;    
+    LOOP 
+    FETCH c_dania INTO row_dania;
+    EXIT WHEN c_dania%NOTFOUND;
+     -- obliczamy maksymalna ilosc dan jaka mozemy wyprodukowac oraz ustawiamy ja jako dostepnosc
+    SELECT MIN(FLOOR(t.ilosc / dk.ilosc)) INTO row_dania.dostepnosc
+    FROM towary t
+    INNER JOIN dania_skladniki dk
+    ON dk.id_towaru = t.id_towaru
+    WHERE dk.id_dania = row_dania.id_dania;
+    END LOOP;
+    CLOSE c_dania;
+END;
+/
+
+CREATE TRIGGER TR_ZMIENIONY_SKLAD_DAN 
+    AFTER INSERT OR UPDATE OR DELETE ON dania_skladniki
+-- wyzwalacz aktualizujacy dostepnosc dan po zmianie skladnikow potrzebnych do wyprodukowania dan
+DECLARE
+    -- kursor iterujacy po daniach dotknietych zmiana
+    CURSOR c_dania IS
+    SELECT d.id_dania, d.dostepnosc
+    FROM dania d;
+
+    row_dania c_dania%ROWTYPE;
+BEGIN
+    OPEN c_dania;    
+    LOOP 
+    FETCH c_dania INTO row_dania;
+    EXIT WHEN c_dania%NOTFOUND;
+     -- obliczamy maksymalna ilosc dan jaka mozemy wyprodukowac oraz ustawiamy ja jako dostepnosc
+    SELECT MIN(FLOOR(t.ilosc / dk.ilosc)) INTO row_dania.dostepnosc
+    FROM towary t
+    INNER JOIN dania_skladniki dk
+    ON dk.id_towaru = t.id_towaru
+    WHERE dk.id_dania = row_dania.id_dania;
+    END LOOP;
+    CLOSE c_dania;
+END;
+/
