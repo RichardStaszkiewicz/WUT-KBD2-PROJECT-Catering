@@ -536,6 +536,10 @@ ADD CONSTRAINT KONTRAHENCI_CZY_FIRMA_CHK CHECK
 (CZY_FIRMA IN ('0', '1'))
 ENABLE;
 
+COMMENT ON TABLE ADRESY IS 'Zawiera polskie adresy wykorzystywane przez kontrahentow.';
+
+COMMENT ON COLUMN ADRESY.KOD_POCZTOWY IS 'Polski format kodu pocztowego';
+
 COMMENT ON TABLE JEDNOSTKI IS 'Tabela slownikowa z dostepnymi jednostkami, w ktorych wyrazone moga byc produkty.';
 
 COMMENT ON TABLE KATEGORIE_PODATKOWE IS 'Tabela slownikowa z kategoriami produktow spozywczych';
