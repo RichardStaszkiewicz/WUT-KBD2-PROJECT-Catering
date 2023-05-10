@@ -29,16 +29,11 @@ INSERT INTO statusy_zamowien VALUES (1, 'Przyjete');
 INSERT INTO statusy_zamowien VALUES (2, 'Zrealizowane');
 INSERT INTO statusy_zamowien VALUES (3, 'Auto odwolane');
 
--- Adresy
-Insert INTO ADRESY VALUES (1, 'Warszawa', '01-248', 'Plac Politechniki', '1', null);
-Insert INTO ADRESY VALUES (2, 'Testowo', '01-234', 'Testowa', '123B', '456A');
-Insert INTO ADRESY VALUES (3, 'Bytom', '02-252', 'Kowalskiego', '123', null);
-
 -- Kontrahenci
-INSERT INTO KONTRAHENCI VALUES (1, null, null, 'KBD2 Katering Bazodanowy', '5333181396', 'kdb2@pw.edu.pl', 1, '123456789', 1, '12345678901234567890', 1);
-INSERT INTO KONTRAHENCI VALUES (2, null, null, 'Dostawy Towarow 365', '5333181394', 'kdb3@pw.edu.pl', 2, '223456789', 2, '452757345678901234567890', 1);
-INSERT INTO KONTRAHENCI VALUES (3, 'Jan', 'Kowalski', NULL, NULL, 'JKOWALSKI@wp.pl', 3, '676886787', 3, '5765678901234567890', 0);
-INSERT INTO KONTRAHENCI VALUES (4, 'Stefan', 'Dostawca',  NULL, NULL, 'SDOSTAWCA@gmail.com', 3, '1234561314', 1, '5675778901234567890', 0);
+INSERT INTO KONTRAHENCI VALUES (1, null, null, 'KBD2 Katering Bazodanowy', '5333181396', 'kdb2@pw.edu.pl', '123456789', 1, '12345678901234567890', 1, 'Warszawa', '01-248', 'Plac Politechniki', '1', null);
+INSERT INTO KONTRAHENCI VALUES (2, null, null, 'Dostawy Towarow 365', '5333181394', 'kdb3@pw.edu.pl', '223456789', 2, '452757345678901234567890', 1, 'Testowo', '01-234', 'Testowa', '123B', '456A');
+INSERT INTO KONTRAHENCI VALUES (3, 'Jan', 'Kowalski', NULL, NULL, 'JKOWALSKI@wp.pl', 3, '676886787', '5765678901234567890', 0, 'Bytom', '02-252', 'Kowalskiego', '123', null);
+INSERT INTO KONTRAHENCI VALUES (4, 'Stefan', 'Dostawca',  NULL, NULL, 'SDOSTAWCA@gmail.com', '1234561314', 1, '5675778901234567890', 0, 'Bytom', '02-252', 'Kowalskiego', '122', null);
 
 -- Faktury
 INSERT INTO FAKTURY 
