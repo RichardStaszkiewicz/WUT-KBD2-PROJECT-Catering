@@ -591,6 +591,7 @@ CREATE TRIGGER TR_USUNIETE_DANIA
     FOR EACH ROW
 -- wyzwalacz usuwajacy zamowienia usunietych dan
 DECLARE
+    PRAGMA AUTONOMOUS_TRANSACTION;
     -- kursor iterujacy po zamowieniach
     CURSOR c_zamowienia IS
     SELECT z.status
@@ -612,6 +613,7 @@ BEGIN
     END LOOP;
 
     CLOSE c_zamowienia;
+    COMMIT;
 END;
 /
 
