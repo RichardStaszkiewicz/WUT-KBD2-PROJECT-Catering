@@ -58,11 +58,23 @@ INSERT INTO POZYCJE_FAKTUR VALUES
 INSERT INTO POZYCJE_FAKTUR VALUES
 (2, 2, 'Dostarczenie kateringu', 1, 2, sysdate-60, 7, 2, 9);
 
+INSERT INTO FAKTURY 
+(id_faktury, nr_faktury, id_nabywcy, id_sprzedawcy, data_wystawienia, data_zaplaty, termin_zaplaty, stawka_vat, sposob_zaplaty, netto, vat, brutto, wartosc_kwoty_slownie)
+VALUES
+(3, '03/2023', 3, 1, sysdate-10, sysdate-11, sysdate-15, 19, '0', 251.5, 59, 310.5, 'trzysta dziesiêæ zloty i piêædziesiat groszy');
+
+INSERT INTO POZYCJE_FAKTUR VALUES
+(3, 1, 'Boczek w ciescie', 7, 2, sysdate-10, 227.5, 53, 279.5);
+
+INSERT INTO POZYCJE_FAKTUR VALUES
+(3, 2, 'Dostarczenie kateringu', 1, 2, sysdate-10, 25, 6, 31);
+
 -- ZAMOWIENIA
 INSERT INTO ZAMOWIENIA VALUES (1, sysdate-60, 2, 3);
 INSERT INTO ZAMOWIENIA VALUES (2, sysdate-40, 2, 4);
 INSERT INTO ZAMOWIENIA VALUES (3, sysdate-20, 2, 3);
 INSERT INTO ZAMOWIENIA VALUES (4, sysdate, 1, 2);
+INSERT INTO ZAMOWIENIA VALUES (5, sysdate-10, 2, 3);
 
 -- ZAMOWIENIA POZYCJE
 INSERT INTO POZYCJE_ZAMOWIEN VALUES (1, 1, 2, 71);
@@ -78,6 +90,10 @@ INSERT INTO POZYCJE_ZAMOWIEN VALUES (4, 1, 3, 90);
 INSERT INTO POZYCJE_ZAMOWIEN VALUES (4, 4, 2, 60);
 INSERT INTO POZYCJE_ZAMOWIEN VALUES (4, 2, 5, 80);
 INSERT INTO POZYCJE_ZAMOWIEN VALUES (4, 3, 1, 2);
+
+INSERT INTO POZYCJE_ZAMOWIEN VALUES (5, 1, 7, 279.5);
+INSERT INTO POZYCJE_ZAMOWIEN VALUES (5, 4, 2, 60);
+INSERT INTO POZYCJE_ZAMOWIEN VALUES (5, 2, 5, 80);
 
 -- Dostawy
 Insert into dostawy values (1, sysdate-50, 4);
