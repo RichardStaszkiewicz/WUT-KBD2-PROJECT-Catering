@@ -629,7 +629,12 @@ DECLARE
     -- kursor iterujacy po daniach dotknietych zmiana
     CURSOR c_dania IS
     SELECT d.id_dania, d.dostepnosc
-    FROM dania d;
+    FROM dania d
+    INNER JOIN skladniki_dan dk
+    ON d.id_dania = dk.id_dania
+    INNER JOIN towary t
+    ON dk.id_towaru = t.id_towaru
+    FOR UPDATE OF dostepnosc;
 
     row_dania c_dania%ROWTYPE;
 BEGIN
@@ -643,6 +648,7 @@ BEGIN
     INNER JOIN SKLADNIKI_DAN dk
     ON dk.id_towaru = t.id_towaru
     WHERE dk.id_dania = row_dania.id_dania;
+    UPDATE dania d SET d.dostepnosc = row_dania.dostepnosc WHERE d.id_dania = row_dania.id_dania;
     END LOOP;
     CLOSE c_dania;
 END;
@@ -655,7 +661,12 @@ DECLARE
     -- kursor iterujacy po daniach dotknietych zmiana
     CURSOR c_dania IS
     SELECT d.id_dania, d.dostepnosc
-    FROM dania d;
+    FROM dania d
+    INNER JOIN skladniki_dan dk
+    ON d.id_dania = dk.id_dania
+    INNER JOIN towary t
+    ON dk.id_towaru = t.id_towaru
+    FOR UPDATE OF dostepnosc;
 
     row_dania c_dania%ROWTYPE;
 BEGIN
@@ -669,6 +680,7 @@ BEGIN
     INNER JOIN SKLADNIKI_DAN dk
     ON dk.id_towaru = t.id_towaru
     WHERE dk.id_dania = row_dania.id_dania;
+    UPDATE dania d SET d.dostepnosc = row_dania.dostepnosc WHERE d.id_dania = row_dania.id_dania;
     END LOOP;
     CLOSE c_dania;
 END;
