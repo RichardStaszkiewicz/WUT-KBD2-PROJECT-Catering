@@ -760,7 +760,6 @@ CREATE OR REPLACE PROCEDURE niezrealizowane_zamowienia AS
     FOR UPDATE OF z.status;
     
     row_zamowienia c_zamowienia%ROWTYPE;
-    var_ostatnia_modyfikacja TIMESTAMP;
     var_dzisiaj TIMESTAMP;
     var_klient VARCHAR(61 BYTE);
     var_wiadomosc VARCHAR2(10000 BYTE);
@@ -775,12 +774,6 @@ BEGIN
     SELECT CURRENT_TIMESTAMP 
     INTO var_dzisiaj
     FROM dual;
-    
-    -- pobieranie daty ostatniej modyfikacji statusow zamowien
-    SELECT TIMESTAMP
-    INTO var_ostatnia_modyfikacja
-    FROM all_tab_modifications 
-    WHERE TABLE_NAME='ZAMOWIENIA' AND PARTITION_NAME IS NOT NULL;
     
     OPEN c_zamowienia;    
     LOOP
@@ -797,7 +790,7 @@ BEGIN
             var_klient := row_zamowienia.imie || ' ' || row_zamowienia.nazwisko;
         END IF;
         
-        IF var_dzisiaj - var_ostatnia_modyfikacja < 7 THEN
+        IF var_dzisiaj - row_zamowienia.data_zamowienia < 30 THEN
         -- nieprzedawnione zamowienie
             var_wiadomosc := var_wiadomosc || chr(10) || row_zamowienia.id_zamowienia || ' ' || row_zamowienia.data_zamowienia || ' ' || var_klient;
         ELSE
