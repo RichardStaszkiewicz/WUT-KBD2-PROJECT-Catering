@@ -747,6 +747,28 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE PROCEDURE dodaj_towary(p_id_dostawy IN NUMBER) AS
+    -- Procedura dodajaca wszystkie towary z danej dostawy do stanu magazynowego
+    CURSOR c_pozycje_dostaw IS
+    SELECT ilosc, id_towaru
+    FROM pozycje_dostaw
+    WHERE id_dostawy = p_id_dostawy;
+    
+    row_pozycje_dostaw c_pozycje_dostaw%ROWTYPE;
+BEGIN
+    OPEN c_pozycje_dostaw;
+    LOOP
+    FETCH c_pozycje_dostaw INTO row_pozycje_dostaw;
+    EXIT WHEN c_pozycje_dostaw%NOTFOUND;
+    -- zwieksz ilosc w magazynie o dostarczona ilosc
+    UPDATE towary SET ilosc = ilosc + row_pozycje_dostaw.ilosc
+    WHERE id_towaru = row_pozycje_dostaw.id_towaru;
+    END LOOP;
+    CLOSE c_pozycje_dostaw;
+    COMMIT;
+END;
+/
+
 CREATE OR REPLACE PROCEDURE niezrealizowane_zamowienia AS
     -- Procedura wysylajaca liste niezrealizowanych i przedawnionych zamowien do pracownika oraz zmieniajaca status zamowien ktorych status nie zmienil sie zbyt dlugo na przedawnione
     -- kursor iterujacy po zamowieniach
