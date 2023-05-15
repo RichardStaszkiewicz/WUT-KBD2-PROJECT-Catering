@@ -788,9 +788,9 @@ CREATE OR REPLACE PROCEDURE niezrealizowane_zamowienia AS
     var_przedawnione VARCHAR2(10000 BYTE);
 BEGIN
     var_wiadomosc := 'Niezrealizowane zamowienia:' || chr(10);
-    var_wiadomosc := var_wiadomosc || 'ID | Data zamowienia | Klient\n';
+    var_wiadomosc := var_wiadomosc || 'ID | Data zamowienia | Klient';
     var_przedawnione := chr(10) || 'Przedawnione zamowienia:' || chr(10);
-    var_przedawnione := var_przedawnione || 'ID | Data zamowienia | Klient\n';
+    var_przedawnione := var_przedawnione || 'ID | Data zamowienia | Klient';
     
     -- pobieranie dzisiejszej daty
     SELECT CURRENT_TIMESTAMP 
@@ -814,10 +814,10 @@ BEGIN
         
         IF var_dzisiaj - row_zamowienia.data_zamowienia < 30 THEN
         -- nieprzedawnione zamowienie
-            var_wiadomosc := var_wiadomosc || chr(10) || row_zamowienia.id_zamowienia || ' ' || row_zamowienia.data_zamowienia || ' ' || var_klient;
+            var_wiadomosc := var_wiadomosc || chr(10) || row_zamowienia.id_zamowienia || '    ' || row_zamowienia.data_zamowienia || '          ' || var_klient;
         ELSE
         -- zmiana statusu na 'auto odwolane'
-            var_przedawnione := var_przedawnione || chr(10) || row_zamowienia.id_zamowienia || ' ' || row_zamowienia.data_zamowienia || ' ' || var_klient;
+            var_przedawnione := var_przedawnione || chr(10) || row_zamowienia.id_zamowienia || '    ' || row_zamowienia.data_zamowienia || '          ' || var_klient;
             UPDATE zamowienia z SET z.status = 3 WHERE z.id_zamowienia = row_zamowienia.id_zamowienia;
         END IF;
     END IF;
