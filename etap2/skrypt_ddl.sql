@@ -730,22 +730,21 @@ END;
 /
 
 CREATE OR REPLACE TRIGGER TR_DOMYSLNA_WARTOSC 
-    BEFORE INSERT ON POZYCJE_ZAMOWIEN
+    BEFORE INSERT OR UPDATE ON POZYCJE_ZAMOWIEN
     FOR EACH ROW
 -- wyzwalacz wstawiajacy domyslna wartosc pozycji zamowienia, czyli ilosc zamowionych dan razy ich cena z menu
 DECLARE
     cenaDania dania.cena%TYPE;
 BEGIN
-    IF (:NEW.WARTOSC IS NULL)
+    IF (:NEW.WARTOSC IS NULL OR :NEW.ilosc <> :OLD.ilosc)
     THEN
         select cena into cenaDania
         from dania
         where ID_DANIA = :new.id_dania;
-        
+
         :new.wartosc := :new.ilosc * cenaDania;
     END IF;
 END;
-/
 
 
 CREATE VIEW BILANS_ZESTAWIENIE
