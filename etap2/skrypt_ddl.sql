@@ -745,7 +745,118 @@ BEGIN
         :new.wartosc := :new.ilosc * cenaDania;
     END IF;
 END;
+/
 
+CREATE OR REPLACE PROCEDURE niezrealizowane_zamowienia AS
+    -- Procedura wysylajaca liste niezrealizowanych i przedawnionych zamowien do pracownika oraz zmieniajaca status zamowien ktorych status nie zmienil sie zbyt dlugo na przedawnione
+    -- kursor iterujacy po zamowieniach
+    CURSOR c_zamowienia IS
+    SELECT z.id_zamowienia, z.data_zamowienia, z.status, sz.nazwa, k.imie, k.nazwisko, k.nazwa knazwa
+    FROM zamowienia z
+    INNER JOIN statusy_zamowien sz
+    ON z.status = sz.id_statusu
+    INNER JOIN kontrahenci k
+    ON k.id_kontrahenta = z.id_klienta
+    FOR UPDATE OF z.status;
+    
+    row_zamowienia c_zamowienia%ROWTYPE;
+    var_ostatnia_modyfikacja TIMESTAMP;
+    var_dzisiaj TIMESTAMP;
+    var_klient VARCHAR(61 BYTE);
+    var_wiadomosc VARCHAR2(10000 BYTE);
+    var_przedawnione VARCHAR2(10000 BYTE);
+BEGIN
+    var_wiadomosc := 'Niezrealizowane zamowienia:' || chr(10);
+    var_wiadomosc := var_wiadomosc || 'ID | Data zamowienia | Klient\n';
+    var_przedawnione := chr(10) || 'Przedawnione zamowienia:' || chr(10);
+    var_przedawnione := var_przedawnione || 'ID | Data zamowienia | Klient\n';
+    
+    -- pobieranie dzisiejszej daty
+    SELECT CURRENT_TIMESTAMP 
+    INTO var_dzisiaj
+    FROM dual;
+    
+    -- pobieranie daty ostatniej modyfikacji statusow zamowien
+    SELECT TIMESTAMP
+    INTO var_ostatnia_modyfikacja
+    FROM all_tab_modifications 
+    WHERE TABLE_NAME='ZAMOWIENIA' AND PARTITION_NAME IS NOT NULL;
+    
+    OPEN c_zamowienia;    
+    LOOP
+    FETCH c_zamowienia INTO row_zamowienia;
+    EXIT WHEN c_zamowienia%NOTFOUND;
+    
+    IF row_zamowienia.nazwa = 'Przyjete' THEN
+    -- jezeli zamowienie zostalo przyjete i nie jest zrealizowane pracownik zostanie powiadomiony
+        IF row_zamowienia.knazwa IS NOT NULL THEN
+        -- nazwa klientow firm
+            var_klient := row_zamowienia.knazwa;
+        ELSE
+        -- nazwa klientow osob prywatnych
+            var_klient := row_zamowienia.imie || ' ' || row_zamowienia.nazwisko;
+        END IF;
+        
+        IF var_dzisiaj - var_ostatnia_modyfikacja < 7 THEN
+        -- nieprzedawnione zamowienie
+            var_wiadomosc := var_wiadomosc || chr(10) || row_zamowienia.id_zamowienia || ' ' || row_zamowienia.data_zamowienia || ' ' || var_klient;
+        ELSE
+        -- zmiana statusu na 'auto odwolane'
+            var_przedawnione := var_przedawnione || chr(10) || row_zamowienia.id_zamowienia || ' ' || row_zamowienia.data_zamowienia || ' ' || var_klient;
+            UPDATE zamowienia z SET z.status = 3 WHERE z.id_zamowienia = row_zamowienia.id_zamowienia;
+        END IF;
+    END IF;
+    END LOOP;
+    -- wyslanie maila pracownikowi
+    var_wiadomosc := var_wiadomosc || var_przedawnione;
+    wyslij_maila(p_do          => 'pracownik@catering.com',
+                 p_od          => 'admin@catering.com',
+                 p_wiadomosc   => var_wiadomosc,
+                 p_smtp_host   => 'smtp.catering.com');
+    -- dbms_output do testowanie
+    --dbms_output.put_line(var_wiadomosc);
+    CLOSE c_zamowienia;
+    COMMIT;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE wyslij_maila (p_do IN VARCHAR2, p_od IN VARCHAR2, p_wiadomosc IN VARCHAR2, p_smtp_host IN VARCHAR2, p_smtp_port IN NUMBER DEFAULT 25) AS
+-- Procera wysylajaca maila pracownikowi
+    mail_conn UTL_SMTP.connection;
+BEGIN
+    mail_conn := UTL_SMTP.open_connection(p_smtp_host, p_smtp_port);
+    UTL_SMTP.helo(mail_conn, p_smtp_host);
+    UTL_SMTP.mail(mail_conn, p_od);
+    UTL_SMTP.rcpt(mail_conn, p_do);
+    UTL_SMTP.data(mail_conn, p_wiadomosc || UTL_TCP.crlf || UTL_TCP.crlf);
+    UTL_SMTP.quit(mail_conn);
+END;
+/
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+            job_name => '"KBD2"."REALIZACJA_ZADAN"',
+            job_type => 'PLSQL_BLOCK',
+            job_action => 'EXEC niezrealizowane_zamowienia;',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=DAILY;BYTIME=030000',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Harmonogram powiadamiajacy pracownikow o niezrealizowanych zamowieniach');
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"KBD2"."REALIZACJA_ZADAN"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"KBD2"."REALIZACJA_ZADAN"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+  
+    DBMS_SCHEDULER.enable(
+             name => '"KBD2"."REALIZACJA_ZADAN"');
+END;
+/
 
 CREATE VIEW BILANS_ZESTAWIENIE
 AS SELECT
